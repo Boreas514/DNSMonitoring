@@ -13,14 +13,13 @@ import dns.query
 
 class DNSSurveillance(object):
     def __init__(self, text_name, server, port):
-        self.dns_dict = dns_dict
+        self.dns_dict = {}
         self.text_name = text_name
         self.DNS_SERVER = server
         self.DNS_PORT = port
         self.IP_RE_PA = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
         self.SYSLOG_SERVER = '192.168.3.37'
         self.SYSLOG_PORT = 514
-
         self.logger = logging.getLogger('DNS Surveillance Logger')
         self.logger.setLevel(logging.INFO)
         self.handler = logging.handlers.SysLogHandler(
@@ -46,7 +45,7 @@ class DNSSurveillance(object):
         response = dns.query.udp(dns_query, self.DNS_SERVER, port=self.DNS_PORT)
         for i in response.answer:
             try:
-                result_ip = re.search(self.IP_RE_PA, i.to_text())
+                result_ip = re.search(self.IP_RE_PA, i.to_text()).group()
                 if result_ip == self.dns_dict[domain]:
                     # 解析正常逻辑
                     return [True, domain, result_ip]
@@ -62,7 +61,6 @@ class DNSSurveillance(object):
             self.logger.info("domain:{}, ip: {}, exceptional_ip: None, 域名解析正常".format(request_info_list[1], request_info_list[2]))
         else:
             self.logger.error("domain:{}, ip: {}, exceptional_ip:{}, 域名解析异常".format(request_info_list[1], request_info_list[2], request_info_list[3]))
-
 
     def thread_worker(self, work_queue):
         while not work_queue.empty():
@@ -84,6 +82,7 @@ class DNSSurveillance(object):
 
             # 核心代码 for循环
             if len_of_dict <= 100:
+                print('轮询开始')
                 for domain in self.dns_dict.keys():
                     # 将域名传入该方法 返回一个列表
                     res_list = self.send_dns_request(domain)
@@ -105,6 +104,7 @@ class DNSSurveillance(object):
                 while threads:
                     threads.pop().join()
             time.sleep(2)
+            print('轮询结束')
 
 
 if __name__ == '__main__':
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         -t <a text contain the map of the domains and ip>
         -s <proxy ip or dns server ip>
         -p <proxy port or dns server port>(optional)
-        If you omit -p option, script will use default dns port is 53.     
+        If you omit -p option, script will use default dns port is 53.
         '''
     )
     parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     server_ip = options.server_ip
     port = options.port
     if (text_name == None) | (server_ip == None):
-        print parser.usage
+        print(parser.usage)
         exit(0)
     else:
         if port == None:
