@@ -1,5 +1,8 @@
-www.baidu.com:61.135.169.121
-www.imooc.com:117.121.101.41
-www.google.com:31.13.74.17
+www.coursera.org:52.0.97.60
 www.163.com:218.60.16.72
-aaa
+bbs.ngacn.cc:221.103.5.6
+www.pokemon.name:112.124.45.75
+msdn.itellyou.cn:211.149.177.72
+www.gooest.com:101.201.222.99
+www.hufu.club:202.97.231.76
+www.clubfrancechine.org:210.14.64.250

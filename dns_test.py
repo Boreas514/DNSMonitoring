@@ -13,14 +13,14 @@ from datetime import datetime
 
 
 class DNSSurveillance(object):
-    def __init__(self, text_name, server, port):
+    def __init__(self, text_name, dns_server, dns_port, syslog_server, syslog_port):
         self.dns_dict = {}
         self.text_name = text_name
-        self.DNS_SERVER = server
-        self.DNS_PORT = port
+        self.DNS_SERVER = dns_server
+        self.DNS_PORT = dns_port
         self.IP_RE_PA = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
-        self.SYSLOG_SERVER = '192.168.3.37'
-        self.SYSLOG_PORT = 514
+        self.SYSLOG_SERVER = syslog_server
+        self.SYSLOG_PORT = syslog_port
         self.logger = logging.getLogger('DNS Surveillance Logger')
         self.logger.setLevel(logging.INFO)
         self.handler = logging.handlers.SysLogHandler(
@@ -140,31 +140,39 @@ class DNSSurveillance(object):
 
 
 if __name__ == '__main__':
-    # parser = optparse.OptionParser(
-    #     '''
-    #     e.x. python dns_test.py -t info.txt -s 192.168.1.2 -p 53
-    #     -t <a text contain the map of the domains and ip>
-    #     -s <proxy ip or dns server ip>
-    #     -p <proxy port or dns server port>(optional)
-    #     If you omit -p option, script will use default dns port is 53.
-    #     '''
-    # )
-    # parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
-    # parser.add_option('-s', dest='server_ip', type='string', help='specify proxy ip or dns server ip')
-    # parser.add_option('-p', dest='port', type='int', help='specify proxy port or dns server port')
-    # (options, args) = parser.parse_args()
-    # text_name = options.text_name
-    # server_ip = options.server_ip
-    # port = options.port
-    # if (text_name == None) | (server_ip == None):
-    #     print(parser.usage)
-    #     exit(0)
-    # else:
-    #     if port == None:
-    #         port = 53
-    text_name = 'test_data.txt'
-    server_ip = '8.8.8.8'
-    port = 53
+    parser = optparse.OptionParser(
+        '''
+        e.x. python dns_test.py -t info.txt -s 192.168.1.2 -p 53
+        -t <a text contain the map of the domains and ip>
+        -s <proxy ip or dns server ip>
+        -p <proxy port or dns server port>(optional)
+        If you omit -p option, script will use default dns port is 53.
+        '''
+    )
+    parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
+    parser.add_option('-ds', dest='dns_server_ip', type='string', help='specify proxy ip or dns server ip')
+    parser.add_option('-dp', dest='dns_port', type='int', help='specify proxy port or dns server port')
+    parser.add_option('-ss', dest='syslog_server_ip', type='string', help='specify syslog server ip')
+    parser.add_option('-sp', dest='syslog_server_port', type='int', help='specify syslog server port')
+    (options, args) = parser.parse_args()
+    text_name = options.text_name
+    dns_server_ip = options.dns_server_ip
+    dns_port = options.dns_port
+    syslog_ip = options.syslog_server_ip
+    syslog_port = options.syslog_server_port
+    if (text_name == None) | (dns_server_ip == None):
+        print(parser.usage)
+        exit(0)
+    else:
+        if dns_port == None:
+            dns_port = 53
+        if syslog_port == None:
+            syslog_port = 514
+    # text_name = 'test_data.txt'
+    # dns_server_ip = '8.8.8.8'
+    # dns_port = 53
+    # syslog_ip = '192.168.3.37'
+    # syslog_port = 514
     # 逻辑入口
-    dns_sur = DNSSurveillance(text_name, server_ip, port)
+    dns_sur = DNSSurveillance(text_name, dns_server_ip, dns_port, syslog_ip, syslog_port)
     dns_sur.run()
