@@ -142,7 +142,7 @@ class DNSSurveillance(object):
 if __name__ == '__main__':
     parser = optparse.OptionParser(
         '''
-        e.x. python dns_test.py -t info.txt -s 192.168.1.2 -p 53
+        e.x. python dns_test.py -t info.txt --ds 192.168.1.2 -dp 53 --ss 192.168.1.3 --sp 514
         -t <a text contain the map of the domains and ip>
         -s <proxy ip or dns server ip>
         -p <proxy port or dns server port>(optional)
@@ -150,10 +150,10 @@ if __name__ == '__main__':
         '''
     )
     parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
-    parser.add_option('-ds', dest='dns_server_ip', type='string', help='specify proxy ip or dns server ip')
-    parser.add_option('-dp', dest='dns_port', type='int', help='specify proxy port or dns server port')
-    parser.add_option('-ss', dest='syslog_server_ip', type='string', help='specify syslog server ip')
-    parser.add_option('-sp', dest='syslog_server_port', type='int', help='specify syslog server port')
+    parser.add_option('--ds', dest='dns_server_ip', type='string', help='specify proxy ip or dns server ip')
+    parser.add_option('--dp', dest='dns_port', type='int', help='specify proxy port or dns server port')
+    parser.add_option('--ss', dest='syslog_server_ip', type='string', help='specify syslog server ip')
+    parser.add_option('--sp', dest='syslog_server_port', type='int', help='specify syslog server port')
     (options, args) = parser.parse_args()
     text_name = options.text_name
     dns_server_ip = options.dns_server_ip
