@@ -9,6 +9,7 @@ import logging
 import logging.handlers
 import dns.message
 import dns.query
+from datetime import datetime
 
 
 class DNSSurveillance(object):
@@ -33,23 +34,41 @@ class DNSSurveillance(object):
         self.work_queue = Queue()
 
     def init_dict(self):
-        # 清空dns字典
-        self.dns_dict = {}
-        with open(self.text_name, 'r') as standard_file:
-            for line in standard_file:
-                line.replace('：', ':')
-                # 该处需处理文本格式异常
-                try:
-                    domain, ip = line.strip().split(':')
-                except ValueError:
-
-                    pass
-                self.dns_dict[domain] = ip
+        while True:
+            bias = 0
+            self.dns_dict = {}
+            with open(self.text_name, 'r') as standard_file:
+                for line in standard_file:
+                    line.replace('：', ':')
+                    # 该处需处理文本格式异常
+                    try:
+                        domain, ip = line.strip().split(':')
+                    except ValueError:
+                        print('ERROR: 读取配置文件错误，请检查配置文件格式！')
+                        self.dns_dict = {}
+                        time.sleep(1)
+                        bias = 1
+                        continue
+                    self.dns_dict[domain] = ip
+            if bias == 0:
+                    break
+            else:
+                continue
         return len(self.dns_dict)
 
     def send_dns_request(self, domain):
         dns_query = dns.message.make_query(domain, "A")
-        response = dns.query.udp(dns_query, self.DNS_SERVER, port=self.DNS_PORT)
+        # 该try代码块用来捕捉超时 防止程序卡住
+        try:
+            response = dns.query.udp(dns_query, self.DNS_SERVER, port=self.DNS_PORT, timeout=2)
+        except dns.exception.Timeout:
+            print('dns请求超时')
+            expected_ip = self.dns_dict[domain]
+            return [False, domain, expected_ip, 'Timeout']
+        # 该判断用来解决域名输入失误
+        if not response.answer:
+            expected_ip = self.dns_dict[domain]
+            return [False, domain, expected_ip, 'None']
         for i in response.answer:
             try:
                 result_ip = re.search(self.IP_RE_PA, i.to_text()).group()
@@ -65,9 +84,12 @@ class DNSSurveillance(object):
 
     def gen_log(self, request_info_list):
         if request_info_list[0]:
-            self.logger.info("domain:{}, ip: {}, exceptional_ip: None, 域名解析正常".format(request_info_list[1], request_info_list[2]))
+            self.logger.info("domain:{}, ip: {}, exceptional_ip: None, 域名解析正常".format(request_info_list[1],
+                                                                                      request_info_list[2]))
         else:
-            self.logger.error("domain:{}, ip: {}, exceptional_ip:{}, 域名解析异常".format(request_info_list[1], request_info_list[2], request_info_list[3]))
+            self.logger.error("domain:{}, ip: {}, exceptional_ip:{}, 域名解析异常".format(request_info_list[1],
+                                                                                    request_info_list[2],
+                                                                                    request_info_list[3]))
 
     def thread_worker(self, work_queue):
         while not work_queue.empty():
@@ -86,16 +108,19 @@ class DNSSurveillance(object):
             len_of_dict = self.init_dict()
 
             # 核心代码 for循环
-            if len_of_dict <= 2:
+            if len_of_dict <= 100:
                 print('轮询开始')
                 for domain in self.dns_dict.keys():
                     # 将域名传入该方法 返回一个列表
+                    print('正在执行send_request方法')
                     res_list = self.send_dns_request(domain)
                     # 将该列表传入该方法 写入日志
+                    print('正在执行gen_log方法')
                     self.gen_log(res_list)
             # 核心代码 多线程入口
             else:
                 thread_pool_size = int(len_of_dict/2)
+                print('多线程开始 线程数%s' % thread_pool_size)
                 if thread_pool_size >= 10: thread_pool_size = 10
                 for domain in self.dns_dict.keys():
                     self.work_queue.put(domain)
@@ -109,9 +134,9 @@ class DNSSurveillance(object):
                 while threads:
                     threads.pop().join()
             print('轮询结束')
+            print(datetime.now())
             print(self.dns_dict)
             time.sleep(5)
-
 
 
 if __name__ == '__main__':
