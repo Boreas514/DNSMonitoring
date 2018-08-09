@@ -33,10 +33,17 @@ class DNSSurveillance(object):
         self.work_queue = Queue()
 
     def init_dict(self):
+        # 清空dns字典
+        self.dns_dict = {}
         with open(self.text_name, 'r') as standard_file:
             for line in standard_file:
                 line.replace('：', ':')
-                domain, ip = line.strip().split(':')
+                # 该处需处理文本格式异常
+                try:
+                    domain, ip = line.strip().split(':')
+                except ValueError:
+
+                    pass
                 self.dns_dict[domain] = ip
         return len(self.dns_dict)
 
@@ -75,13 +82,11 @@ class DNSSurveillance(object):
 
     def run(self):
         while True:
-            # 清空dns字典
-            self.dns_dict = {}
             # 读取txt信息 将映射存入字典
             len_of_dict = self.init_dict()
 
             # 核心代码 for循环
-            if len_of_dict <= 100:
+            if len_of_dict <= 2:
                 print('轮询开始')
                 for domain in self.dns_dict.keys():
                     # 将域名传入该方法 返回一个列表
@@ -90,7 +95,7 @@ class DNSSurveillance(object):
                     self.gen_log(res_list)
             # 核心代码 多线程入口
             else:
-                thread_pool_size = int(len_of_dict/70)
+                thread_pool_size = int(len_of_dict/2)
                 if thread_pool_size >= 10: thread_pool_size = 10
                 for domain in self.dns_dict.keys():
                     self.work_queue.put(domain)
@@ -103,33 +108,38 @@ class DNSSurveillance(object):
                 self.work_queue.join()
                 while threads:
                     threads.pop().join()
-            time.sleep(2)
             print('轮询结束')
+            print(self.dns_dict)
+            time.sleep(5)
+
 
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser(
-        '''
-        e.x. python dns_test.py -t info.txt -s 192.168.1.2 -p 53
-        -t <a text contain the map of the domains and ip>
-        -s <proxy ip or dns server ip>
-        -p <proxy port or dns server port>(optional)
-        If you omit -p option, script will use default dns port is 53.
-        '''
-    )
-    parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
-    parser.add_option('-s', dest='server_ip', type='string', help='specify proxy ip or dns server ip')
-    parser.add_option('-p', dest='port', type='int', help='specify proxy port or dns server port')
-    (options, args) = parser.parse_args()
-    text_name = options.text_name
-    server_ip = options.server_ip
-    port = options.port
-    if (text_name == None) | (server_ip == None):
-        print(parser.usage)
-        exit(0)
-    else:
-        if port == None:
-            port = 53
+    # parser = optparse.OptionParser(
+    #     '''
+    #     e.x. python dns_test.py -t info.txt -s 192.168.1.2 -p 53
+    #     -t <a text contain the map of the domains and ip>
+    #     -s <proxy ip or dns server ip>
+    #     -p <proxy port or dns server port>(optional)
+    #     If you omit -p option, script will use default dns port is 53.
+    #     '''
+    # )
+    # parser.add_option('-t', dest='text_name', type='string', help='specify mapping text file')
+    # parser.add_option('-s', dest='server_ip', type='string', help='specify proxy ip or dns server ip')
+    # parser.add_option('-p', dest='port', type='int', help='specify proxy port or dns server port')
+    # (options, args) = parser.parse_args()
+    # text_name = options.text_name
+    # server_ip = options.server_ip
+    # port = options.port
+    # if (text_name == None) | (server_ip == None):
+    #     print(parser.usage)
+    #     exit(0)
+    # else:
+    #     if port == None:
+    #         port = 53
+    text_name = 'test_data.txt'
+    server_ip = '8.8.8.8'
+    port = 53
     # 逻辑入口
     dns_sur = DNSSurveillance(text_name, server_ip, port)
     dns_sur.run()

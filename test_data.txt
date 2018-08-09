@@ -1,2 +1,5 @@
-www.baidu.com:61.135.169.125
-www.imooc.com:192.168.1.1
+www.baidu.com:61.135.169.121
+www.imooc.com:117.121.101.41
+www.google.com:31.13.74.17
+www.163.com:218.60.16.72
+aaa
